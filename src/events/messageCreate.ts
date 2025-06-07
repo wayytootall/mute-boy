@@ -1,16 +1,28 @@
 import { Message } from 'discord.js';
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_KEY!
 );
 
-// List of banned words (can expand later)
-const bannedWords = ['badword', 'stupid', 'dumb', 'heck'];
+// Default banned words
+const defaultWords = [
+  'badword',
+  'stupid',
+  'dumb',
+  'heck',
+  'idiot',
+  'loser',
+  'trash',
+  'cringe',
+  'hate',
+  'shut up',
+  'kill yourself',
+  'fuck',
+  'shit',
+];
 
-// Fun personality responses
 const personalityResponses = [
   "🚨 Whoa there, buddy. That's not how we talk here.",
   "🧼 Language! This is a family-friendly Game Boy.",
@@ -21,16 +33,35 @@ const personalityResponses = [
 module.exports = {
   name: 'messageCreate',
   async execute(message: Message) {
-    // Skip bot messages and empty messages
     if (message.author.bot || !message.content) return;
 
     console.log(`[Debug] Message received: ${message.content}`);
 
+    const guildId = message.guild?.id;
     const msg = message.content.toLowerCase();
-    const hit = bannedWords.find(word => msg.includes(word));
 
-    if (hit) console.log(`[Debug] Hit word: ${hit}`);
+    let customWords: string[] = [];
+
+    // Fetch server-level custom banned words from Supabase
+    if (guildId) {
+      const { data, error } = await supabase
+        .from('banned_words')
+        .select('word')
+        .eq('guild_id', guildId);
+
+      if (error) {
+        console.error('[❌ Supabase] Failed to load custom banned words:', error.message);
+      } else if (data) {
+        customWords = data.map(row => row.word.toLowerCase());
+      }
+    }
+
+    // Combine default + custom words
+    const allWords = [...new Set([...defaultWords, ...customWords])];
+    const hit = allWords.find(word => msg.includes(word));
     if (!hit) return;
+
+    console.log(`[Debug] Hit word: ${hit}`);
 
     const response = personalityResponses[Math.floor(Math.random() * personalityResponses.length)];
 
@@ -45,7 +76,7 @@ module.exports = {
         message: message.content,
         word_hit: hit,
         channel_id: message.channel.id,
-        guild_id: message.guild?.id ?? 'unknown',
+        guild_id: guildId ?? 'unknown',
       });
 
       if (error) {
