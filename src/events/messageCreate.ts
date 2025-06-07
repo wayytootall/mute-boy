@@ -77,6 +77,7 @@ module.exports = {
         word_hit: hit,
         channel_id: message.channel.id,
         guild_id: guildId ?? 'unknown',
+        flagged_at: new Date().toISOString(),
       });
 
       if (error) {
