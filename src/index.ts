@@ -1,7 +1,9 @@
+import { ExtendedClient } from './types/ExtendedClient';
 import { Client, GatewayIntentBits, Collection } from 'discord.js';
 import * as dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
+
 
 dotenv.config();
 
@@ -11,9 +13,10 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
   ],
-});
+}) as ExtendedClient;
 
-// @ts-ignore - We'll fix typing later
+
+
 client.commands = new Collection();
 
 const commandsPath = path.join(__dirname, 'commands');
